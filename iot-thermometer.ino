@@ -4,6 +4,7 @@
 #include <Wire.h>
 #include <GyverOLED.h>
 #include "Adafruit_HTU21DF.h"
+#include <TroykaRTC.h>
 #include "secrets.h"
 
 // consts
@@ -12,7 +13,7 @@
 #define SERIAL_PORT 9600
 
 // data
-const char *location = SECRET_LOCATION;
+const char *title = SECRET_TITLE;
 
 // wifi
 const char *ssid = SECRET_SSID;
@@ -23,8 +24,7 @@ IPAddress mqtt_server(SECRET_SERVER_IP_OCTET_1, SECRET_SERVER_IP_OCTET_2, SECRET
 const int mqtt_port = SECRET_MQTT_PORT;
 const char *mqtt_user = SECRET_MQTT_USER;
 const char *mqtt_pass = SECRET_MQTT_PASS;
-const char *temperature_topic = SECRET_MQTT_TEMPERATURE_TOPIC;
-const char *humidity_topic = SECRET_MQTT_HUMIDITY_TOPIC;
+const char *topic = SECRET_MQTT_TOPIC;
 const char *mqtt_client_id = SECRET_MQTT_CLIENT_ID;
 
 // services
@@ -32,10 +32,12 @@ WiFiClient wifi_client;
 PubSubClient mqtt_client(mqtt_server, mqtt_port, wifi_client);
 Adafruit_HTU21DF htu = Adafruit_HTU21DF();
 GyverOLED<SSD1306_128x64, OLED_NO_BUFFER> oled;
+RTC rtc_clock;
 
 // init
 void setup() {
   init_serial();
+  init_clock();
   init_oled();
   init_sensor();
   try_init_wifi(WAIT_TIMEOUT);
@@ -46,6 +48,7 @@ void loop() {
   wl_status_t status = WiFi.status();
   float temperature = htu.readTemperature();
   float humidity = htu.readHumidity();
+  uint32_t timestamp = get_timestamp();
 
   print_temperature(temperature);
   print_humidity(humidity);
@@ -59,19 +62,20 @@ void loop() {
 
   if (WiFi.status() == WL_CONNECTED) {
     try_init_mqtt();
-    send_temp(temperature);
-    send_humidity(humidity);
+    send(temperature, humidity, timestamp);
   }
 }
 
 // functions
-void send_temp(float value) {
-  mqtt_client.publish(temperature_topic, String(value).c_str());
+uint32_t get_timestamp() {
+  rtc_clock.read();
+  return rtc_clock.getUnixTime();
 }
 
-void send_humidity(float value) {
-  mqtt_client.publish(humidity_topic, String(value).c_str()); 
+void send(float temperature, float humidity, uint32_t timestamp) {
+  mqtt_client.publish(topic, (String(temperature) + "|" + String(humidity) + "|" + timestamp).c_str());
 }
+
 
 void print_temperature(float value) {
   oled.setCursor(0, 3);
@@ -126,13 +130,7 @@ void print_wifi_status(wl_status_t status) {
 }
 
 void try_init_wifi(int timeout) {
-    char message[50];
-    const char *prefix = "Connecting to ";
-    const char *postfix = "...";
-    strcpy(message, prefix);
-    strcat(message, ssid);
-    strcat(message, postfix);
-
+    const char *message = (String("Connecting to ") + ssid + String("...")).c_str();
     Serial.println(message);
     WiFi.begin(ssid, pass);
 
@@ -156,6 +154,11 @@ void try_init_mqtt() {
     }
 }
 
+void init_clock() {
+  rtc_clock.begin();
+  rtc_clock.set(__TIMESTAMP__);
+}
+
 void init_serial() {
   Serial.begin(SERIAL_PORT);
 }
@@ -172,7 +175,7 @@ void init_oled() {
   oled.clear();
   oled.setScale(2);
   oled.home();
-  oled.print(location);
+  oled.print(title);
   delay(DELAY);
   oled.setScale(1);
 }
