@@ -34,6 +34,9 @@ Adafruit_HTU21DF htu = Adafruit_HTU21DF();
 GyverOLED<SSD1306_128x64, OLED_NO_BUFFER> oled;
 RTC rtc_clock;
 
+// global variables
+wl_status_t prev_status = wl_status_t::WL_IDLE_STATUS;
+
 // init
 void setup() {
   init_serial();
@@ -52,7 +55,8 @@ void loop() {
 
   print_temperature(temperature);
   print_humidity(humidity);
-  print_wifi_status(status);
+  print_wifi_status(status, prev_status);
+  prev_status = status;
 
   delay(DELAY);
 
@@ -89,7 +93,11 @@ void print_humidity(float value) {
   oled.print(value);
 }
 
-void print_wifi_status(wl_status_t status) {
+void print_wifi_status(wl_status_t status, wl_status_t prev_status) {
+  if (status == prev_status) {
+    return;
+  }
+
   oled.setCursor(0, 5);
   oled.print("                       ");
   oled.setCursor(0, 5);
