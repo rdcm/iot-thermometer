@@ -11,11 +11,11 @@ A pet project with an example of using the IOT. In this project, a scheme has be
 
 ## Arduino scheme
 
-![scheme](scheme.jpeg)
+![scheme](./images/scheme.jpeg)
 
 ## Architecture
 
-![system components](scheme_of_collecting_sensors_data.png)
+![system components](./images/scheme_of_collecting_sensors_data.png)
 
 ## Up & Running
 
@@ -26,3 +26,9 @@ A pet project with an example of using the IOT. In this project, a scheme has be
 ## Web interfaces
 `http://localhost:15672/` - rabbitmq admin pannel, admin/admin  
 `http://localhost:3000/`  - grafana web interface, admin/admin  
+
+## Grafana dashboard
+
+The data will be available after the device has been running for some time.
+
+![dashboard](./images/dashboard.jpg)
