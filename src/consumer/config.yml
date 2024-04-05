@@ -1,0 +1,13 @@
+---
+rabbitmq:
+  port: 5672
+  host: "rabbitmq"
+  user: "consumer"
+  password: "consumer"
+  queue: "messages"
+clickhouse:
+  hostname: "clickhouse"
+  port: 9000
+  password: ""
+  database: "default"
+  username: "default"

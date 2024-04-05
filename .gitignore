@@ -1,1 +1,16 @@
+# ide
+.idea
+
+# go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+src/consumer/consumer
+
+# arduino
 secrets.h

@@ -1,18 +1,52 @@
 version: "3.8"
 services:
   rabbitmq:
-    image: rabbitmq:3.12-management
+    image: rabbitmq:3.13.1-management
     hostname: rabbitmq
     container_name: rabbitmq
     restart: always
     environment:
-      - RABBITMQ_DEFAULT_USER=rmuser
-      - RABBITMQ_DEFAULT_PASS=rmpassword
-      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit log_levels [{connection,error},{default,error}] disk_free_limit 2147483648
+      RABBITMQ_DEFAULT_USER: admin # you should update definitions.json manually
+      RABBITMQ_DEFAULT_PASS: admin # you should update definitions.json manually
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: '-rabbit log_levels [{connection,error},{default,error}] disk_free_limit 2147483648'
     volumes:
-      - ./rabbitmq:/var/lib/rabbitmq
+      - "./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf"
+      - "./docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json"
     ports:
       - 15672:15672
       - 5672:5672
       - 1883:1883
     command: "/bin/bash -c \"rabbitmq-plugins enable --offline rabbitmq_mqtt rabbitmq_web_mqtt rabbitmq_amqp1_0; rabbitmq-server\""
+
+  clickhouse:
+    image: clickhouse/clickhouse-server
+    container_name: clickhouse
+    restart: always
+    ulimits:
+        nofile:
+            soft: 262144
+            hard: 262144
+    ports:
+      - "9000:9000"
+      - "8123:8123"
+    volumes:
+        - "./docker/clickhouse:/docker-entrypoint-initdb.d"
+
+  grafana:
+      image: grafana/grafana
+      container_name: grafana
+      restart: always
+      ports:
+        - "3000:3000"
+      environment:
+        GF_INSTALL_PLUGINS: grafana-clickhouse-datasource
+      volumes:
+        - ./docker/grafana/provisioning/:/etc/grafana/provisioning/
+        - ./docker/grafana/dashboards/:/var/lib/grafana/dashboards/
+
+  consumer:
+    image: consumer:latest
+    container_name: consumer
+    restart: always
+    build:
+      context: ./src/consumer/
