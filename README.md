@@ -11,7 +11,7 @@ A pet project with an example of using the IOT. In this project, a scheme has be
 
 ## Arduino scheme
 
-TODO
+![scheme](scheme.jpeg)
 
 ## Architecture
 
