@@ -22,6 +22,7 @@ wl_status_t prev_status = wl_status_t::WL_IDLE_STATUS;
 // wifi
 const char* ssid = SECRET_SSID;
 const char* pass = SECRET_PASS;
+String wifi_statuses[8] = { "Idle", "No SSID Avail", "Scan completed", "Connected", "Connect fail", "Connection lost", "Wrong pass", "Disconnected" };
 
 // mqtt
 IPAddress mqtt_server(SECRET_SERVER_IP_OCTET_1, SECRET_SERVER_IP_OCTET_2, SECRET_SERVER_IP_OCTET_3, SECRET_SERVER_IP_OCTET_4);
@@ -108,38 +109,16 @@ void print_wifi_status(wl_status_t status, wl_status_t prev_status) {
   oled.print("                       ");
   oled.setCursor(0, 5);
   oled.print("WiFi: ");
-  switch (status) {
-    case 0:
-      oled.print("Idle");
-      break;
-    case 1:
-      oled.print("No SSID Avail");
-      break;
-    case 2:
-      oled.print("Scan completed");
-      break;
-    case 3:
-      oled.print("Connected");
-      break;
-    case 4:
-      oled.print("Connect fail");
-      break;
-    case 5:
-      oled.print("Connection lost");
-      break;
-    case 6:
-      oled.print("Wrong pass");
-      break;
-    case 7:
-      oled.print("Disconnected");
-      break;
-    case 255:
-      oled.print("No shield");
-      break;
-    default:
-      oled.print("Unknown");
-      break;
+
+  if (status == 255) {
+    oled.print("No shield");
   }
+
+  if (status >= 0 && status <= 7) {
+    oled.print(wifi_statuses[status]);
+  }
+
+  oled.print("Unknown");
 }
 
 void try_init_wifi(int timeout) {
