@@ -21,7 +21,7 @@ A pet project with an example of using the IOT. In this project, a scheme has be
 
 *device according to the proposed scheme must be assembled independently
 
-`docker-compose build --no-cache consumer && docker-compose up -d`
+`make up`
 
 ## Web interfaces
 `http://localhost:15672/` - rabbitmq admin pannel, admin/admin  

@@ -10,7 +10,7 @@
 *.test
 *.out
 go.work
-src/consumer/consumer
+[Bb]in/
 
 # arduino
 secrets.h
