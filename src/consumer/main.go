@@ -1,43 +1,60 @@
 package main
 
 import (
-	"encoding/json"
-	amqp "github.com/rabbitmq/amqp091-go"
+	"context"
+	"fmt"
 	"log"
-	"time"
+	"os"
+	"os/signal"
+
+	"consumer/clickhouse"
+	"consumer/config"
+	"consumer/handler"
+	"consumer/rabbitmq"
 )
 
 func main() {
-	cfg := readCfg()
-	ch := NewClickhouse()
-	ch.Connect(cfg.Clickhouse)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
 
+	if err := appMain(ctx); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func appMain(ctx context.Context) error {
+	cfg, err := config.ReadCfg()
+	if err != nil {
+		return fmt.Errorf("read config: %w", err)
+	}
+
+	clickhouseClient := clickhouse.New(
+		cfg.Clickhouse.Hostname,
+		cfg.Clickhouse.Port,
+		cfg.Clickhouse.Database,
+		cfg.Clickhouse.Username,
+		cfg.Clickhouse.Password,
+	)
+	if err := clickhouseClient.Connect(ctx); err != nil {
+		return fmt.Errorf("clickhouse client connect: %w", err)
+	}
 	defer func() {
-		ch.Close()
+		if err := clickhouseClient.Close(); err != nil {
+			log.Printf("clickhouse client close: %v", err)
+		}
 	}()
 
-	rabbitMq := NewRabbitMq(cfg.Rabbit)
-	rabbitMq.Connect()
-	rabbitMq.Consume(func(msg amqp.Delivery) {
-		data := Measurement{}
-		parseErr := json.Unmarshal(msg.Body[:], &data)
-		if parseErr != nil {
-			log.Printf("Failed umarshall data. Error: %s", parseErr)
-			return
-		}
+	measurementHandler := handler.New(clickhouseClient)
 
-		insertErr := ch.Insert(data.Temperature, data.Humidity, time.Unix(data.Timestamp, 0))
-		if insertErr != nil {
-			log.Printf("Failed insert data. Error: %s", insertErr)
-			return
-		}
-	})
+	rabbitmqClient := rabbitmq.New(
+		cfg.Rabbit.GetConnStr(),
+		cfg.Rabbit.Queue,
+		measurementHandler,
+	)
 
-	defer func() {
-		rabbitMq.Close()
-	}()
+	if err := rabbitmqClient.Run(ctx); err != nil {
+		return fmt.Errorf("run rabbitmq client: %w", err)
+	}
 
-	var forever chan struct{}
-	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-	<-forever
+	return nil
 }

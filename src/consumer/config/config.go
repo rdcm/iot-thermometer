@@ -1,7 +1,8 @@
-package main
+package config
 
 import (
 	"fmt"
+
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
@@ -26,17 +27,16 @@ type Clickhouse struct {
 	Username string `yaml:"username" env:"CH_USERNAME"`
 }
 
-func (c *RabbitMq) getConnStr() string {
+func (c *RabbitMq) GetConnStr() string {
 	return fmt.Sprintf("amqp://%s:%s@%s:%s/", c.User, c.Password, c.Host, c.Port)
 }
 
-func readCfg() Config {
+func ReadCfg() (*Config, error) {
 	var cfg Config
 
-	err := cleanenv.ReadConfig("config.yml", &cfg)
-	if err != nil {
-		panic(err)
+	if err := cleanenv.ReadConfig("config.yml", &cfg); err != nil {
+		return nil, fmt.Errorf("read config: %w", err)
 	}
 
-	return cfg
+	return &cfg, nil
 }

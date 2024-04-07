@@ -1,13 +1,13 @@
-FROM golang:1.22.2 AS build-stage
-WORKDIR /app
-COPY . .
+FROM golang:1.22.2 AS build
+WORKDIR /build
+COPY go.mod go.sum ./
 RUN go mod download
+COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o consumer
 
 
 FROM golang:1.22.2-alpine3.19
-WORKDIR /
-COPY --from=build-stage /app/consumer   /consumer
-COPY --from=build-stage /app/config.yml /config.yml
-
-ENTRYPOINT ["/consumer"]
+WORKDIR /app
+COPY --from=build /build/consumer   /app/consumer
+COPY --from=build /build/config.yml /app/config.yml
+ENTRYPOINT ["/app/consumer"]
